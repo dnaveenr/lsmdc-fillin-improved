@@ -12,7 +12,7 @@ import pickle
 
 import torch
 import torch.utils.data as data
-
+import ipdb
 
 import multiprocessing
 
@@ -96,6 +96,7 @@ class DataLoader(data.Dataset):
         self.bert_size = self.opt.bert_size  # 768 * 2
         if self.use_bert_embedding:
             self.bert_embedding_dir = self.opt.bert_embedding_dir
+            print(f"bert_embedding_dir : {self.bert_embedding_dir}")
             self.bert_embedding = {'train' : pickle.load(open(os.path.join(self.bert_embedding_dir,'train_embeddings.pkl'),'rb')),
                             'val' : pickle.load(open(os.path.join(self.bert_embedding_dir, 'val_embeddings.pkl'),'rb')),
                             'test' : pickle.load(open(os.path.join(self.bert_embedding_dir, 'test_embeddings.pkl'),'rb'))}
@@ -234,6 +235,7 @@ class DataLoader(data.Dataset):
                 movie = self.info['videos'][id]['movie']
                 clip = self.info['videos'][id]['clip']
 
+            
                 fc_dir = [self.input_fc_dir, movie, clip + '.npy']
                 fc_feats = np.load(os.path.join(*fc_dir))
                 fc_max_seg = min(fc_feats.shape[0], self.max_seg)
@@ -254,13 +256,16 @@ class DataLoader(data.Dataset):
                 else:
                     face_feats = np.zeros([self.max_face, self.opt.face_feat_size], dtype = 'float32')
                 face_feats = face_feats[:self.max_face]
-
+                
+                
                 temporal_dist = face_feats[:,1]
                 fc_idx = (fc_max_seg * temporal_dist - 1e-6).astype(int)
                 for _ in range(n_blanks):
                     fc_features.append(fc_feats[fc_idx])
                     face_features.append(face_feats)
                     face_masks.append(face_mask)
+                
+                
         return np.array(fc_features), np.array(face_features), np.array(face_masks)
 
     # Each batch is a video with multiple clips/sentences
@@ -333,6 +338,7 @@ class DataLoader(data.Dataset):
                 if ix < slot_num:
                     row[:nonzeros[ix]] = 1
             i+=1
+
 
         data = {}
         data['fc_feats'] = fc_batch

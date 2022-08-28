@@ -13,8 +13,10 @@ from dataloader import *
 from train_utils import *
 from eval_utils import eval_split
 import misc.utils as utils
+import ipdb
 
-from models.fillin_model import FillInCharacter
+#from models.fillin_model import FillInCharacter
+from models.face_caption_model import FaceCaptionModel
 
 try:
     import tensorboardX as tb
@@ -79,11 +81,14 @@ def train(opt):
         opt.glove_npy = None
 
     # set up models
-    gen_model = FillInCharacter(opt)
+    ipdb.set_trace()
+    gen_model = FaceCaptionModel(opt)
     gen_model = gen_model.cuda()
 
     if torch.cuda.device_count() > 1:
         gen_model = nn.DataParallel(gen_model)
+
+    ipdb.set_trace()
     gen_model.train()
     gen_optimizer = utils.build_optimizer(gen_model.parameters(), opt)
 
@@ -161,6 +166,7 @@ def train(opt):
         """ TRAIN GENERATOR """
         gen_model.train()
         start = time.time()
+        ipdb.set_trace()
         gen_loss, wrapped, sent_num = train_generator(gen_model, gen_optimizer, loader, opt.grad_clip)
         end = time.time()
 

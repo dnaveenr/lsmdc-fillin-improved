@@ -9,6 +9,8 @@ import torch.nn.functional as F
 from .memory import MemoryGenerator
 from .modules.attention import Attention
 
+import ipdb
+
 def print_norm(output):
     # input is a tuple of packed inputs
     # output is a Tensor. output.data is the Tensor we are interested
@@ -86,6 +88,7 @@ class FillInCharacter(nn.Module):
     def _forward(self, fc_feats, img_feats, face_feats, face_masks, captions, caption_masks, bert_emb, slots, slot_masks, slot_size,
                 characters, genders=None):
         # get memory of features for each slot
+        ipdb.set_trace()
         memory, gender_logprobs = self.memory_generator(fc_feats, img_feats, face_feats, face_masks, captions, caption_masks, bert_emb, slots, slot_size)
         characters = characters[:,:slot_size+1]
         character_embed = self.character_embed(characters)

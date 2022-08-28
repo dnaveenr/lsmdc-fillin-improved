@@ -17,8 +17,11 @@ def train_generator(gen_model, gen_optimizer, loader, grad_clip=0.1):
     wrapped = data['bounds']['wrapped']
     gen_optimizer.zero_grad()
 
-    loss = gen_model(fc_feats, img_feats, face_feats, face_masks, captions, masks, bert_emb, slots, slot_masks, slot_size,
-                     characters, genders)
+
+    #loss = gen_model(fc_feats, img_feats, face_feats, face_masks, captions, masks, bert_emb, slots, slot_masks, slot_size,
+    #                 characters, genders)
+    loss =  gen_model(fc_feats, face_feats, face_masks, captions, masks, slots, slot_masks, slot_size,
+                characters)
     loss = loss.mean()
     loss.backward()
     gen_loss = loss.item()

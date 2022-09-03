@@ -69,7 +69,7 @@ class FaceCaptionModel(nn.Module):
     def forward(self, fc_feats, face_feats, face_masks, captions, caption_masks, slots, slot_masks, slot_size,
                 characters, genders=None):
         # get memory of features for each slot
-        ipdb.set_trace()
+        #ipdb.set_trace()
         characters = characters[:,:slot_size+1]
         face_features = self._get_required_face_features(slot_size, face_feats)
         caption_features  = self._get_required_caption_features(slot_size, captions, caption_masks)
@@ -80,7 +80,7 @@ class FaceCaptionModel(nn.Module):
             transformer_masks = ~masks
             src_mask = self.transformer.generate_square_subsequent_mask(masks.size(1)-1).cuda()
             tgt_mask = self.transformer.generate_square_subsequent_mask(masks.size(1)).cuda()
-            ipdb.set_trace()
+            #ipdb.set_trace()
             cap_face_decoder_output = self.transformer_decoder(caption_features.transpose(0,1), face_features.transpose(0,1))
             decoder_output = self.transformer_decoder(character_embed.transpose(0,1), cap_face_decoder_output, 
                                                       tgt_mask=tgt_mask,

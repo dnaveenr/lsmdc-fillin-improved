@@ -14,6 +14,7 @@ from train_utils import *
 from eval_utils import eval_split
 import misc.utils as utils
 import ipdb
+import wandb
 
 #from models.fillin_model import FillInCharacter
 from models.face_caption_model import FaceCaptionModel
@@ -81,14 +82,14 @@ def train(opt):
         opt.glove_npy = None
 
     # set up models
-    ipdb.set_trace()
+    #ipdb.set_trace()
     gen_model = FaceCaptionModel(opt)
     gen_model = gen_model.cuda()
 
     if torch.cuda.device_count() > 1:
         gen_model = nn.DataParallel(gen_model)
 
-    ipdb.set_trace()
+    #ipdb.set_trace()
     gen_model.train()
     gen_optimizer = utils.build_optimizer(gen_model.parameters(), opt)
 
@@ -166,7 +167,7 @@ def train(opt):
         """ TRAIN GENERATOR """
         gen_model.train()
         start = time.time()
-        ipdb.set_trace()
+        #ipdb.set_trace()
         gen_loss, wrapped, sent_num = train_generator(gen_model, gen_optimizer, loader, opt.grad_clip)
         end = time.time()
 
@@ -174,6 +175,7 @@ def train(opt):
         if g_iter % opt.losses_print_every == 0:
             print("g_iter {} (g_epoch {}), gen_loss = {:.3f}, time/batch = {:.3f}" \
                 .format(g_iter, g_epoch, gen_loss, end - start))
+            wandb.log({"gen_loss": gen_loss})
 
         # Log Losses
         if g_iter % opt.losses_log_every == 0:
@@ -203,6 +205,7 @@ def train(opt):
             else:
                 current_score = - val_loss
             g_val_result_history[g_epoch] = {'g_val_loss': val_loss, 'g_val_score': current_score}
+            wandb.log({'g_val_loss': val_loss, 'g_val_score': current_score})
             print('validation:', g_val_result_history[g_epoch])
 
             # Save the best generator model
@@ -241,5 +244,7 @@ def train(opt):
             update_lr_flag = True
 
 if __name__ == '__main__':
+    wandb.init(project="lsmdc-fillin", entity="movie-char-fillers")
     opt = opts.parse_opt()
+    wandb.config = vars(opt)
     train(opt)

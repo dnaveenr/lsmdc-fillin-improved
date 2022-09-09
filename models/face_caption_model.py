@@ -94,14 +94,14 @@ class FaceCaptionModel(nn.Module):
     def _forward(self, fc_feats, face_feats, face_masks, captions, caption_masks, slots, slot_masks, slot_size,
                 characters, genders=None):
         # get memory of features for each slot
-        ipdb.set_trace()
+        #ipdb.set_trace()
         characters = characters[:,:slot_size+1]
         face_features = self._get_required_face_features(slot_size, face_feats)
         caption_features  = self._get_required_caption_features(slot_size, captions, caption_masks)
         video_features = self._get_required_video_features(slot_size, fc_feats)
         character_embed = self.character_embed(characters)
         masks = slot_masks[:,:slot_size+1].bool()
-        ipdb.set_trace()
+        #ipdb.set_trace()
         vid_caption_features = torch.cat((video_features, caption_features), 2)
         
         if self.classifier_type == 'transformer':
@@ -129,11 +129,13 @@ class FaceCaptionModel(nn.Module):
 
         face_features = self._get_required_face_features(slot_size, face_feats)
         caption_features  = self._get_required_caption_features(slot_size, captions, caption_masks)
+        video_features = self._get_required_video_features(slot_size, fc_feats)
+        vid_caption_features = torch.cat((video_features, caption_features), 2)
 
         if self.classifier_type == 'transformer':
             transformer_masks = ~masks
             src_mask = self.transformer.generate_square_subsequent_mask(masks.size(1) - 1).cuda()
-            cap_face_decoder_output = self.transformer_decoder(caption_features.transpose(0,1), face_features.transpose(0,1))
+            cap_face_decoder_output = self.transformer_decoder(vid_caption_features.transpose(0,1), face_features.transpose(0,1))
 
             predictions = fc_feats.new_zeros(batch_size, slot_size+1, dtype=torch.long)
             for i in range(slot_size):

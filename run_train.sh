@@ -12,7 +12,7 @@ module load u18/cudnn/7.6.5-cuda-10.2
 
 mkdir /scratch/dnaveenr/
 
-:'
+
 echo "Transfering train_data from ADA to node."
 scp ada:/share3/dnaveenr/fillin_data.zip /scratch/dnaveenr/
 scp ada:/share3/dnaveenr/i3d_200.zip /scratch/dnaveenr/
@@ -25,7 +25,7 @@ mv /scratch/dnaveenr/data/i3d2 /scratch/dnaveenr/data/i3d
 unzip /scratch/dnaveenr/fillin_data.zip -d /scratch/dnaveenr/data
 
 tar xvzf /scratch/dnaveenr/preprocessed_data.tar.gz -C /scratch/dnaveenr/data/fillin_data
-'
+
 
 eval "$(conda shell.bash hook)"
 conda activate base_ds_env

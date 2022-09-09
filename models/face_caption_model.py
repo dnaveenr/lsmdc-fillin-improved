@@ -64,9 +64,13 @@ class FaceCaptionModel(nn.Module):
 
         return label_features
 
+    def forward(self, *args, **kwargs):
+        mode = kwargs.get('mode', 'forward')
+        if 'mode' in kwargs:
+            del kwargs['mode']
+        return getattr(self, '_' + mode)(*args, **kwargs)
 
-
-    def forward(self, fc_feats, face_feats, face_masks, captions, caption_masks, slots, slot_masks, slot_size,
+    def _forward(self, fc_feats, face_feats, face_masks, captions, caption_masks, slots, slot_masks, slot_size,
                 characters, genders=None):
         # get memory of features for each slot
         #ipdb.set_trace()
@@ -93,6 +97,36 @@ class FaceCaptionModel(nn.Module):
 
         return loss
 
+    def _predict(self, fc_feats, face_feats, face_masks, captions, caption_masks, slots, slot_masks, 
+                 slot_size):
+    
+        batch_size = fc_feats.size(0)
+        masks = slot_masks[:, :slot_size + 1].bool()
+
+        face_features = self._get_required_face_features(slot_size, face_feats)
+        caption_features  = self._get_required_caption_features(slot_size, captions, caption_masks)
+
+        if self.classifier_type == 'transformer':
+            transformer_masks = ~masks
+            src_mask = self.transformer.generate_square_subsequent_mask(masks.size(1) - 1).cuda()
+            cap_face_decoder_output = self.transformer_decoder(caption_features.transpose(0,1), face_features.transpose(0,1))
+
+            predictions = fc_feats.new_zeros(batch_size, slot_size+1, dtype=torch.long)
+            for i in range(slot_size):
+                character_embed = self.character_embed(predictions[:,:i+1]).transpose(0,1)
+                tgt_transformer_masks = transformer_masks[:,:i+1]
+                dec_output = self.transformer.decoder(character_embed, cap_face_decoder_output,
+                                                tgt_mask=self.transformer.generate_square_subsequent_mask(i+1).cuda(),
+                                                tgt_key_padding_mask=tgt_transformer_masks,
+                                                memory_key_padding_mask=transformer_masks[:,1:]).transpose(0,1)
+                dec_logit = self.logit(dec_output)[:,-1,:]
+                _, tgt = torch.max(dec_logit.data, 1)
+                predictions[:,i+1] = tgt
+            predictions = predictions[:,1:]
+        
+        predicted_genders = predictions.new_zeros(predictions.size(0), predictions.size(1),dtype=torch.long)
+        
+        return predictions, predicted_genders
 
 
 class IdentificationLoss(nn.Module):

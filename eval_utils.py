@@ -160,19 +160,19 @@ def eval_split(gen_model, loader, eval_kwargs={}):
         with torch.no_grad():
             # calculate loss
             if split != 'test' and not ensemble:
-                loss = gen_model(fc_feats, img_feats, face_feats, face_masks, captions, masks, bert_emb,
-                                 slots, slot_masks,slot_size, characters, genders)
+                loss = gen_model(fc_feats, face_feats, face_masks, captions, masks, slots, slot_masks, slot_size,
+                                 characters)
                 loss = loss.mean()
                 losses.append(loss.item())
             if split == 'test' or eval_accuracy:
-                predicted_characters, predicted_genders = gen_model(fc_feats, img_feats, face_feats, face_masks,
-                                                                    captions, masks, bert_emb, slots, slot_masks, slot_size,
-                                                                    mode='predict')
+                predicted_characters, predicted_genders = gen_model(fc_feats, face_feats, face_masks, captions, 
+                                                                    masks, slots, slot_masks, slot_size, mode='predict')
                 torch.cuda.synchronize()
                 predicted_characters, predicted_genders = parse_predictions(predicted_characters, predicted_genders, slots)
 
                 # if split == 'test':
-                alphas = gen_model.get_alpha()
+                #alphas = gen_model.get_alpha()
+                alphas = None
 
         g_id = -1
         b = -1

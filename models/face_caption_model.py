@@ -38,6 +38,9 @@ class FaceCaptionModel(nn.Module):
         self.face_feat_size = opt.face_feat_size - 6
         self.face_embed = nn.Linear(self.face_feat_size, self.face_encoding_size)
 
+        # Convert ViD+Caption --> memory_encoding_size
+        self.final_encode = nn.Linear(self.video_encoding_size + self.rnn_size, self.memory_encoding_size)
+
         self.decoder_layer = nn.TransformerDecoderLayer(d_model=self.memory_encoding_size, nhead=8)
         self.transformer_decoder = nn.TransformerDecoder(self.decoder_layer, num_layers=6)
 
@@ -101,8 +104,9 @@ class FaceCaptionModel(nn.Module):
         video_features = self._get_required_video_features(slot_size, fc_feats)
         character_embed = self.character_embed(characters)
         masks = slot_masks[:,:slot_size+1].bool()
-        #ipdb.set_trace()
+        ipdb.set_trace()
         vid_caption_features = torch.cat((video_features, caption_features), 2)
+        vid_caption_features = self.final_encode(vid_caption_features)
         
         if self.classifier_type == 'transformer':
             transformer_masks = ~masks
@@ -131,6 +135,8 @@ class FaceCaptionModel(nn.Module):
         caption_features  = self._get_required_caption_features(slot_size, captions, caption_masks)
         video_features = self._get_required_video_features(slot_size, fc_feats)
         vid_caption_features = torch.cat((video_features, caption_features), 2)
+
+        vid_caption_features = self.final_encode(vid_caption_features)
 
         if self.classifier_type == 'transformer':
             transformer_masks = ~masks

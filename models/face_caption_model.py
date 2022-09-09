@@ -15,6 +15,14 @@ class FaceCaptionModel(nn.Module):
         self.classifier_type = opt.classifier_type
         self.transformer = torch.nn.Transformer(self.memory_encoding_size)
 
+        # Video Embedding
+        self.use_video = opt.use_video
+        self.fc_feat_size = opt.fc_feat_size
+        self.video_encoding_size = opt.video_encoding_size
+        if self.use_video:
+            self.fc_embed = nn.Linear(self.fc_feat_size, self.video_encoding_size)
+
+
         # Sentence Embedding
          # sent embed
         self.rnn_size = opt.rnn_size
@@ -53,16 +61,29 @@ class FaceCaptionModel(nn.Module):
 
     def _get_required_caption_features(self, slot_size, captions, caption_masks):
         label_features = None
+        seq_len = 10
         for slot in range(slot_size):
             label_feat = self.sent_embed(captions[:,slot], caption_masks[:,slot])
+            label_feat = label_feat.unsqueeze(1).repeat(1, seq_len, 1)
             if slot > 0:
                 label_features = torch.cat((label_features, label_feat),dim=1)
             else:
                 label_features = label_feat
         
-        label_features = label_features.reshape(64, slot_size, 512)
-
         return label_features
+
+    def _get_required_video_features(self, slot_size, fc_feats):
+        video_features = None
+        for slot in range(slot_size):
+            # fc_feats[:,slot].shape --> torch.Size([64, 10, 1024])
+            fc_feat = self.fc_embed(fc_feats[:,slot])
+            # fc_feat.shape --> torch.Size([64, 10, 256])
+            if slot > 0:
+                video_features = torch.cat((video_features, fc_feat),dim=1)
+            else:
+                video_features = fc_feat
+        
+        return video_features                                                                                                                                                                                                               
 
     def forward(self, *args, **kwargs):
         mode = kwargs.get('mode', 'forward')
@@ -73,19 +94,22 @@ class FaceCaptionModel(nn.Module):
     def _forward(self, fc_feats, face_feats, face_masks, captions, caption_masks, slots, slot_masks, slot_size,
                 characters, genders=None):
         # get memory of features for each slot
-        #ipdb.set_trace()
+        ipdb.set_trace()
         characters = characters[:,:slot_size+1]
         face_features = self._get_required_face_features(slot_size, face_feats)
         caption_features  = self._get_required_caption_features(slot_size, captions, caption_masks)
+        video_features = self._get_required_video_features(slot_size, fc_feats)
         character_embed = self.character_embed(characters)
         masks = slot_masks[:,:slot_size+1].bool()
-
+        ipdb.set_trace()
+        vid_caption_features = torch.cat((video_features, caption_features), 2)
+        
         if self.classifier_type == 'transformer':
             transformer_masks = ~masks
             src_mask = self.transformer.generate_square_subsequent_mask(masks.size(1)-1).cuda()
             tgt_mask = self.transformer.generate_square_subsequent_mask(masks.size(1)).cuda()
             #ipdb.set_trace()
-            cap_face_decoder_output = self.transformer_decoder(caption_features.transpose(0,1), face_features.transpose(0,1))
+            cap_face_decoder_output = self.transformer_decoder(vid_caption_features.transpose(0,1), face_features.transpose(0,1))
             decoder_output = self.transformer_decoder(character_embed.transpose(0,1), cap_face_decoder_output, 
                                                       tgt_mask=tgt_mask,
                                                       tgt_key_padding_mask=transformer_masks)
